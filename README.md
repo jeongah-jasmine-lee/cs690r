@@ -6,7 +6,7 @@ This project focuses on predicting arm gestures (e.g., skeletal model) using wri
 
 ## 🎯 Goal
 Develop and evaluate a machine learning model that maps wrist-worn IMU data to 3D upper-limb joint positions.
-<img src="image.png" alt="alt text" width="50%"/>
+<img src="figs/Pipeline.png" alt="alt text" width="60%"/>
 
 
 ## 📂 Dataset
@@ -46,3 +46,11 @@ To effectively demonstrate model performance, consider visualizing predicted mot
 - **Error heatmaps across joints or frames**
 
 💡 *Tip*: Use `matplotlib.animation` to animate skeletons frame by frame. You can refer to the "Visualize MoCap" section in the Jupyter notebook for starter code.
+
+## VirtualIMU: Getting IMU data from MoCap using VirtualIMU
+https://ieeexplore.ieee.org/document/10331242
+- VirtualIMU uses MediaPipe to get pose from video and convert it to IMU
+- You’d need to get rid of the MediaPipe module and use the standard
+- pipeline (red lines) on AMASS MoCap data to convert to IMU
+- Optionally, for a better sensor alignment, you can optimize the population
+<img src="figs/VIrtualIMU.png" alt="alt text" width="60%"/>
