@@ -47,10 +47,12 @@ To effectively demonstrate model performance, consider visualizing predicted mot
 
 💡 *Tip*: Use `matplotlib.animation` to animate skeletons frame by frame. You can refer to the "Visualize MoCap" section in the Jupyter notebook for starter code.
 
-## VirtualIMU: Getting IMU data from MoCap using VirtualIMU
-https://ieeexplore.ieee.org/document/10331242
-- VirtualIMU uses MediaPipe to get pose from video and convert it to IMU
-- You’d need to get rid of the MediaPipe module and use the standard
-- pipeline (red lines) on AMASS MoCap data to convert to IMU
-- Optionally, for a better sensor alignment, you can optimize the population
-<img src="figs/VIrtualIMU.png" alt="alt text" width="60%"/>
+## 🛰️ VirtualIMU: Synthesizing IMU Data from MoCap
+
+📄 [IEEE Paper: VirtualIMU](https://ieeexplore.ieee.org/document/10331242)
+
+VirtualIMU is a method for generating synthetic IMU data from motion capture (MoCap) sequences. <br>
+Originally, it uses [MediaPipe](https://ai.google.dev/edge/mediapipe/solutions/guide) to get pose from video and convert it to IMU <br>
+However, in our case, since we already have high-quality MoCap data, we can skip MediaPipe and directly use the red path of the VirtualIMU pipeline to convert MoCap into IMU data.
+Optionally, for a better sensor alignment, you can optimize the population parameters using backpropagation (dotted lines)
+<img src="figs/VirtualIMU.png" alt="VirtualIMU Pipeline" width="60%"/>
