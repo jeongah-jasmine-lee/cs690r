@@ -24,7 +24,6 @@ The data has already been preprocessed to save time. You can download the prepar
 [🔗 Preprocessed Dataset](https://drive.google.com/file/d/1v48UuEhwlC4UUOpxG6x3nNzSg1uvTDgJ/view?usp=sharing)
 
 
-
 ### 2. 🧠 Model Training
 We train a machine learning model to predict 3D joint positions from the 6-axis IMU data.
 
