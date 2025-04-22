@@ -67,7 +67,7 @@ class IMUPoseDataset(Dataset):
         self.samples, self.subj_ids = [], []
         acc_all, gyro_all, raw = [], [], []
 
-        # ---------- pass 1 : load & filter ----------
+        # Load and Filter
         for f in sorted(glob.glob(os.path.join(root_dir, '*.npz'))):
             data = np.load(f)
 
@@ -83,16 +83,16 @@ class IMUPoseDataset(Dataset):
             raw.append((accL, gyroL, accR, gyroR, pose, _subject_id(f)))
             acc_all.extend([accL, accR]);  gyro_all.extend([gyroL, gyroR])
 
-        # ---------- normalisation ----------
+        # Normalization
         self.acc_mu  = np.mean(np.vstack(acc_all),  axis=0)
         self.acc_std = np.std( np.vstack(acc_all),  axis=0) + 1e-6
         self.gyro_mu = np.mean(np.vstack(gyro_all), axis=0)
         self.gyro_std= np.std( np.vstack(gyro_all), axis=0) + 1e-6
 
-        # ---------- pass 2 : sliding‑window ----------
+        # Sliding Windows
         for accL, gyroL, accR, gyroR, pose, sid in raw:
-            accL  = (accL  - self.acc_mu)  / self.acc_std
-            accR  = (accR  - self.acc_mu)  / self.acc_std
+            accL  = (accL - self.acc_mu)  / self.acc_std
+            accR  = (accR - self.acc_mu)  / self.acc_std
             gyroL = (gyroL - self.gyro_mu) / self.gyro_std
             gyroR = (gyroR - self.gyro_mu) / self.gyro_std
 
@@ -111,7 +111,7 @@ class IMUPoseDataset(Dataset):
         imu, pose = self.samples[idx]
         return torch.from_numpy(imu), torch.from_numpy(pose), self.subj_ids[idx]
 
-# ---------- helpers ----------------------------------------------------------
+# ---------- Helpers ----------------------------------------------------------
 def _subject_id(path):
     base = os.path.basename(path)
     return int(base.split('_')[-2][1:])   # 'sXX' -> XX
