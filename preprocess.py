@@ -115,3 +115,12 @@ class IMUPoseDataset(Dataset):
 def _subject_id(path):
     base = os.path.basename(path)
     return int(base.split('_')[-2][1:])   # 'sXX' -> XX
+
+def collate_dict(batch):
+    """
+    Stack list of tuples (imu, pose, _) into dicts that your training
+    loop already expects:  {'imu':  (B, T, 12),  'mocap': (B, T, J, 3)}
+    """
+    imu   = torch.stack([b[0] for b in batch])   # (B, T, 12)
+    mocap = torch.stack([b[1] for b in batch])   # (B, T, J, 3)
+    return {'imu': imu, 'mocap': mocap}
