@@ -1,2 +1,5 @@
 ./data
 *.npz
+
+venv/
+__pycache__
