@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import math
+from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 # Simple LSTM --------------------------------------------------------
 class SimpleNN(nn.Module):
@@ -18,64 +19,95 @@ class SimpleNN(nn.Module):
     
 
 # Transformer -----------------------------------------------------------
-class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, max_len=5000):
+class ConvTransformer(nn.Module):
+    """
+    Conv + Transformer encoder for IMU→MoCap regression.
+    Input:  x of shape (B, window_size, input_dim)
+    Output: Tensor of shape (B, window_size * 8 * 3)
+    """
+    def __init__(
+        self,
+        input_dim: int,              # e.g. 12
+        transformer_dim: int,        # d_model, e.g. 64
+        window_size: int,            # sequence length
+        nhead: int,                  # attention heads, e.g. 8
+        dim_feedforward: int,        # transformer FF size, e.g. 256
+        transformer_dropout: float,  # dropout rate, e.g. 0.1
+        transformer_activation: str, # "gelu" or "relu"
+        num_encoder_layers: int,     # number of Transformer layers, e.g. 6
+        encode_position: bool = False
+    ):
         super().__init__()
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float32).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        self.register_buffer('pe', pe)
+        d_model = transformer_dim
+        W = window_size
 
-    def forward(self, x):
-        T = x.size(1)
-        return x + self.pe[:T]
-
-class IMU2PoseTransformer(nn.Module):
-    def __init__(self,
-                 input_size=4*3,        # 12 IMU channels
-                 d_model=96,
-                 nhead=4,
-                 num_layers=3,
-                 dim_feedforward=256,
-                 dropout=0.1,
-                 out_dim=8*3):           # Output dimension is (J * 3)
-        super().__init__()
-        self.input_proj = nn.Linear(input_size, d_model)
-        self.posenc = PositionalEncoding(d_model)
+        # 1) Conv1d stack to embed raw IMU → (B, d_model, W)
+        self.input_proj = nn.Sequential(
+            nn.Conv1d(input_dim,   d_model, 1), nn.GELU(),
+            nn.Conv1d(d_model,     d_model, 1), nn.GELU(),
+            nn.Conv1d(d_model,     d_model, 1), nn.GELU(),
+            nn.Conv1d(d_model,     d_model, 1), nn.GELU(),
+        )
         
-        encoder_layer = nn.TransformerEncoderLayer(
+        # 2) Positional embedding (optional)
+        self.encode_position = encode_position
+        if encode_position:
+            # one position vector per timestep
+            self.position_embed = nn.Parameter(torch.randn(W, 1, d_model))
+
+        # 3) Transformer encoder
+        encoder_layer = TransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead,
             dim_feedforward=dim_feedforward,
-            dropout=dropout,
-            batch_first=True
+            dropout=transformer_dropout,
+            activation=transformer_activation
         )
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers)
-        
-        self.head = nn.Linear(d_model, out_dim)
-        
-        self.out_dim = out_dim
-        self.num_joints = out_dim // 3
+        self.transformer_encoder = TransformerEncoder(
+            encoder_layer,
+            num_layers=num_encoder_layers,
+            norm=nn.LayerNorm(d_model)
+        )
 
-    def forward(self, x, target_shape=None):
+        # 4) Regression head (token‑wise)
+        self.regression_head = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model // 4),
+            nn.GELU(),
+            nn.Dropout(transformer_dropout),
+            nn.Linear(d_model // 4, 8 * 3)
+        )
+
+        # 5) Xavier init
+        for p in self.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Args:
-            x: Tensor of shape (B, T, 4, 3)
-        Returns:
-            output: Tensor of shape (B, T, J, 3)
+        x: FloatTensor of shape (B, window_size, 4, 3) OR already flattened (B, W, C)
+        returns: FloatTensor of shape (B, W*8*3)
         """
-        B, T, S, C = x.shape  # Batch, Time, Sensors (4), Channels (3)
-        x = x.view(B, T, S * C)  # Flatten 4*3=12 -> (B, T, 12)
-        
-        h = self.input_proj(x)     # (B, T, d_model)
-        h = self.posenc(h)         # (B, T, d_model)
-        h = self.encoder(h)        # (B, T, d_model)
-        out = self.head(h)         # (B, T, out_dim)
-        
-        if target_shape is not None:
-            B, T, J, C = target_shape
-            return out.view(B, T, J, C)  # (B, T, J, 3)
-        else:
-            return out
+        # if it's still (B, W, 4, 3), flatten sensor×axis → channels
+        if x.dim() == 4:
+            B, W, S, A = x.shape   # S=4 sensors, A=3 axes
+            x = x.reshape(B, W, S * A)
+
+        # ── embed + reshape ───────────────────────────────
+        x = x.transpose(1, 2)         # (B, C, W)
+        x = self.input_proj(x)       # (B, d_model, W)
+        x = x.permute(2, 0, 1)       # (W, B, d_model)
+
+        if self.encode_position:
+            x = x + self.position_embed
+
+        # ── transformer ─────────────────────────────────────
+        x = self.transformer_encoder(x)  # (W, B, d_model)
+        x = x.permute(1, 0, 2)           # (B, W, d_model)
+
+        # ── regression head ──────────────────────────────────
+        B, W, D = x.shape
+        x = x.reshape(B * W, D)          # (B*W, d_model)
+        out = self.regression_head(x)    # (B*W, 8*3)
+        out = out.view(B, W * 8 * 3)     # (B, W*8*3)
+        return out
