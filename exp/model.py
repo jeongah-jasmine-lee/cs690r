@@ -28,14 +28,14 @@ class ConvTransformer(nn.Module):
     def __init__(
         self,
         input_dim: int,              # e.g. 12
-        transformer_dim: int,        # d_model, e.g. 64
-        window_size: int,            # sequence length
+        transformer_dim: int,        # d_model, e.g. 64  
         nhead: int,                  # attention heads, e.g. 8
         dim_feedforward: int,        # transformer FF size, e.g. 256
         transformer_dropout: float,  # dropout rate, e.g. 0.1
         transformer_activation: str, # "gelu" or "relu"
         num_encoder_layers: int,     # number of Transformer layers, e.g. 6
-        encode_position: bool = False
+        encode_position: bool = False,
+        window_size: int = 60,       # sequence length
     ):
         super().__init__()
         d_model = transformer_dim
@@ -111,3 +111,21 @@ class ConvTransformer(nn.Module):
         out = self.regression_head(x)    # (B*W, 8*3)
         out = out.view(B, W * 8 * 3)     # (B, W*8*3)
         return out
+
+class BiLSTM(nn.Module):
+    def __init__(self, input_size=4*3, hidden_size=12, num_layers=2):
+        super().__init__()
+        self.lstm = nn.LSTM(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            batch_first=True,
+            bidirectional=True
+        )
+        # hidden_size*2 = 24 = 8 joints × 3 coords
+    def forward(self, x):
+        # x: (N, T, 4, 3)
+        x = x.flatten(2)              # → (N, T, 12)
+        out, _ = self.lstm(x)         # → (N, T, 24)
+        return out
+model = BiLSTM(input_size=12, hidden_size=12, num_layers=2)
