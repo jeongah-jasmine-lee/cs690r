@@ -1,2 +1,7 @@
 ./data
 *.npz
+
+venv/
+__pycache__
+.vscode/
+*pth
