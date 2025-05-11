@@ -31,6 +31,7 @@ We train a machine learning model to predict 3D joint positions from the 6-axis 
 - **Output**: 3D joint coordinates (MoCap format)
 - **Bio-mechanical constraints**: Constraints introduced to the model to ensure physiologically plausible predictions, such as preventing elbow joints from extending beyond 180 degrees.
 
+Trained models are available at: https://drive.google.com/drive/folders/1_Lr1bzFNbsq3S6beP_V98H6U0kGkz0Ce?usp=sharing
 
 ### 3. 📊 Evaluation & Visualization
 
