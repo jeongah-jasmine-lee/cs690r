@@ -5,3 +5,6 @@ venv/
 __pycache__
 .vscode/
 *pth
+
+result_convTrans/
+result_lstm/

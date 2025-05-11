@@ -1,12 +1,9 @@
 import torch
 import torch.nn.functional as F
 
-EPS = 1e-6
+EPS = 1e-6 # For Numerical Stability
 
-### ⭐ Bio-mechanical constraints
-
-def eps_norm(v):
-    return v / (v.norm(p=2,dim=-1,keepdim=True) + EPS)
+### ⭐ Bio-mechanical onstraints
 
 def angle_constraint_loss(predictions, alpha=0.1, min_angle=30, max_angle=180):
     """
@@ -32,10 +29,6 @@ def angle_constraint_loss(predictions, alpha=0.1, min_angle=30, max_angle=180):
     right_fore = right_wrist - right_elbow
     
     # Normalize the vectors
-    # left_upper_norm = F.normalize(left_upper, p=2, dim=-1)
-    # left_fore_norm = F.normalize(left_fore, p=2, dim=-1)
-    # right_upper_norm = F.normalize(right_upper, p=2, dim=-1)
-    # right_fore_norm = F.normalize(right_fore, p=2, dim=-1)
     left_upper_norm = eps_norm(left_upper)
     left_fore_norm = eps_norm(left_fore)
     right_upper_norm = eps_norm(right_upper)
@@ -57,6 +50,9 @@ def angle_constraint_loss(predictions, alpha=0.1, min_angle=30, max_angle=180):
     total_penalty = torch.mean(left_penalty) + torch.mean(right_penalty)
     
     return alpha * total_penalty
+
+def eps_norm(v):
+    return v / (v.norm(p=2,dim=-1,keepdim=True) + EPS)
 
 def bone_length_consistency_loss(predictions, alpha=0.1):
     """

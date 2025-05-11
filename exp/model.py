@@ -18,7 +18,7 @@ class SimpleNN(nn.Module):
         return out
     
 
-# Transformer -----------------------------------------------------------
+# ConvTransformer -----------------------------------------------------
 class ConvTransformer(nn.Module):
     """
     Conv + Transformer encoder for IMU→MoCap regression.
@@ -112,6 +112,7 @@ class ConvTransformer(nn.Module):
         out = out.view(B, W * 8 * 3)     # (B, W*8*3)
         return out
 
+# Bi-LSTM ---------------------------------------------------------------------
 class BiLSTM(nn.Module):
     def __init__(self, input_size=4*3, hidden_size=12, num_layers=2):
         super().__init__()
