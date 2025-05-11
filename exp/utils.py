@@ -3,6 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from IPython.display import HTML
+from pathlib import Path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -250,9 +251,17 @@ def create_skeleton_animation(ground_truth, predictions, save_path=None, fps=30,
     
     # Save animation if a path is provided
     if save_path is not None:
-        writer = animation.FFMpegWriter(fps=fps)
-        ani.save(save_path, writer=writer)
-        print(f"Animation saved to {save_path}")
+        # writer = animation.FFMpegWriter(fps=fps)
+        # ani.save(save_path, writer=writer)
+        # print(f"Animation saved to {save_path}")
+
+        # Save .mp4
+        mp4_writer = animation.FFMpegWriter(fps=fps)
+        ani.save(save_path + '.mp4', writer=mp4_writer)
+        
+        # Save .gif
+        gif_writer = animation.PillowWriter(fps=fps)
+        ani.save(save_path + '.gif', writer=gif_writer)
     
     plt.close()
     return ani
@@ -312,6 +321,43 @@ def visualize_model_predictions(model, test_dataloader, num_samples=1, save_anim
                 display(HTML(ani.to_jshtml()))
             
             # Process only the first batch to avoid visualizing too much data
-            # if i == 20:
-            break
+            if i == 10:
+                break
+
+def visualize_each_file(model, dataset, device, fps=30, save_path = 'result'):
+    model.eval()
+    for fid, npz_path in enumerate(dataset.filenames):
+        # 1) reconstruct only windows for file `fid`
+        full_gt, full_pred = None, None
+        with torch.no_grad():
+            for win_fid, start in dataset._index:
+                if win_fid != fid:
+                    continue
+                sample    = dataset._files[win_fid]
+                imu_win   = sample['imu'][start : start+dataset.window_size][None]
+                mocap_win = sample['mocap'][start : start+dataset.window_size]
+
+                imu_t   = torch.from_numpy(imu_win).float().to(device)
+                pred    = model(imu_t)[0].view(dataset.window_size, 8, 3).cpu().numpy()
+
+                if full_gt is None:
+                    full_gt   = mocap_win.copy()
+                    full_pred = pred.copy()
+                else:
+                    full_gt   = np.concatenate([full_gt,   mocap_win[-1:]], axis=0)
+                    full_pred = np.concatenate([full_pred, pred[-1:]],      axis=0)
+
+        # 2) static snapshots
+        for frame_idx in [0, full_gt.shape[0] - 1]:
+            _ = visualize_skeleton_comparison(full_gt, full_pred,
+                                              frame_idx=frame_idx,
+                                              title=f"{Path(npz_path).stem} frame {frame_idx}")
+            plt.show()
+
+        # 3) animation + save
+        stem    = Path(npz_path).stem
+        base    = str(Path(save_path)/stem)
+        ani = create_skeleton_animation(full_gt, full_pred,
+                                        fps=fps, duration=None,
+                                        frame_step=1, save_path=base)
 

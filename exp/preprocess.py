@@ -38,8 +38,6 @@ def extractIMU(data):
 
 # ---------- PREPROCESSING ------------------------------------------------------
 
-# TRIM DATA
-
 # DENOISING
 def butter_filter(x, sample_rate, cutoff, btype='low', order=6):
     nyquist = 0.5 * sample_rate
@@ -59,8 +57,6 @@ def filter_imu(acc, gyro, sample_rate=60.0, lp_cut=20, bp=(0.2, 20)):
 def hp_filter_imu(acc, gyro, sample_rate=60.0, hp_cut=0.1):
     acc_filtered = butter_filter(acc, sample_rate, cutoff=hp_cut,btype='high', order=6)
     return acc_filtered, gyro          # shapes (T,3) each
-
-# RESAMPLING
 
 # NORMALIZATION
 def imu_normalization_3D(x):
@@ -143,10 +139,13 @@ def rodrigues_gravity_removal(local_acc, local_gyr, sample_rate=60.0):
     gravity_free_acc -= G[None,:] * gravLnorm[:,None]
     
     # Apply filtering_and_integrate to global data
-    acc_filt, gyr_filt = filter_imu(gravity_free_acc, local_gyr, fs=sample_rate, lp_cut=20, bp=(0.1, 20))
+    acc_filt, gyr_filt = filter_imu(gravity_free_acc, local_gyr, fs=sample_rate, lp_cut=10, bp=(0.2, 10))
 
     return acc_filt, gyr_filt
 
+"""
+    *** vpg_filter IS UNDER ACTIVE DEVELOPMENT ***
+"""
 def vqf_filter(local_acc: np.ndarray,
                local_gyr: np.ndarray,
                sample_rate: float) -> tuple[np.ndarray, np.ndarray]:

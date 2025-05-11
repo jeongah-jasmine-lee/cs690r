@@ -1,11 +1,3 @@
-"""
-    The code is based on this paper:
-
-    Shavit, Yoli, and Itzik Klein. "Boosting inertial-based human activity 
-recognition with transformers." IEEE Access 9 (2021): 53540-53547.
-
-"""
-
 import numpy as np
 import torch
 from torch.utils.data import Dataset
@@ -13,6 +5,10 @@ import logging
 from preprocess import *
 
 class CustomDataset(Dataset):
+    """
+        CustomDataset is a default dataset. It uses full-length signal
+        instead of segmented data
+    """
     def __init__(self, filenames, filter=False, sample_rate=60):
         self.filenames = filenames
         self.filter = filter
@@ -28,8 +24,7 @@ class CustomDataset(Dataset):
         time, left_acc, right_acc, left_gyro, right_gyro = extractIMU(data)
 
         if self.filter:
-            # filter_func = fuse_and_rotate
-            filter_func = filter_imu
+            filter_func = fuse_and_rotate
             left_acc_filt, left_gyro_filt = filter_func(left_acc, left_gyro, sample_rate=self.sample_rate)
             right_acc_filt, right_gyro_filt = filter_func(right_acc, right_gyro, sample_rate=self.sample_rate)
             imu = np.stack([left_acc_filt, right_acc_filt, left_gyro_filt, right_gyro_filt], axis=1) # (T, 4, 3)
@@ -64,6 +59,7 @@ class IMUDataset(Dataset):
         self.window_shift = window_shift or window_size
         self.filter = filter
         self.sample_rate = sample_rate
+        self.filenames = filenames
         
         # Load & preprocess each file once
         self._files = []
@@ -75,7 +71,7 @@ class IMUDataset(Dataset):
             
             # optionally filter/rotate to global
             if self.filter:
-                filter_func = vqf_filter
+                filter_func = fuse_and_rotate # Available choide: fuse_and_rotate, filter_imu, hp_filter_imu, rodrigues_gravity_removal
                 left_acc, left_gyro   = filter_func(left_acc, left_gyro, sample_rate=self.sample_rate)
                 right_acc, right_gyro = filter_func(right_acc, right_gyro, sample_rate=self.sample_rate)
             
