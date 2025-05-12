@@ -99,7 +99,7 @@ def fuse_and_rotate(local_acc, local_gyr, sample_rate=60.0):
     global_acc[:, 2] -= GRAVITY_CONSTANT
 
     # Apply filtering_and_integrate to global data
-    # global_acc_filt, global_gyr_filt = filter_imu(global_acc, global_gyr, sample_rate=sample_rate, lp_cut=20, bp=(0.1, 20))
+    global_acc, global_gyr = filter_imu(global_acc, global_gyr, sample_rate=sample_rate, lp_cut=20, bp=(0.1, 20))
     
     return global_acc, global_gyr
 
