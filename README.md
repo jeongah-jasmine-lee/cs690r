@@ -56,3 +56,7 @@ Originally, it uses [MediaPipe](https://ai.google.dev/edge/mediapipe/solutions/g
 However, in our case, since we already have high-quality MoCap data, we can skip MediaPipe and directly use the red path of the VirtualIMU pipeline to convert MoCap into IMU data.
 Optionally, for a better sensor alignment, you can optimize the population parameters using backpropagation (dotted lines)
 <img src="figs/VirtualIMU.png" alt="VirtualIMU Pipeline" width="60%"/>
+
+## How to Run
+1. Model training: Run `exp/main.ipynb`
+2. Visualization: Run `exp/visualization.ipynb`. It will takes 3-5 minutes.
