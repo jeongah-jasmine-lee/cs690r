@@ -31,7 +31,7 @@ We train a machine learning model to predict 3D joint positions from the 6-axis 
 - **Output**: 3D joint coordinates (MoCap format)
 - **Bio-mechanical constraints**: Constraints introduced to the model to ensure physiologically plausible predictions, such as preventing elbow joints from extending beyond 180 degrees.
 
-Trained models are available at: https://drive.google.com/drive/folders/1_Lr1bzFNbsq3S6beP_V98H6U0kGkz0Ce?usp=sharing
+Trained models are available [here](https://drive.google.com/drive/folders/1_Lr1bzFNbsq3S6beP_V98H6U0kGkz0Ce?usp=sharing)
 
 ### 3. 📊 Evaluation & Visualization
 
@@ -45,8 +45,6 @@ To effectively demonstrate model performance, consider visualizing predicted mot
 - **3D animated skeleton sequences**
 - **Error heatmaps across joints or frames**
 
-💡 *Tip*: Use `matplotlib.animation` to animate skeletons frame by frame. You can refer to the "Visualize MoCap" section in the Jupyter notebook for starter code.
-
 ## 🛰️ VirtualIMU: Synthesizing IMU Data from MoCap
 
 📄 [IEEE Paper: VirtualIMU](https://ieeexplore.ieee.org/document/10331242)
@@ -59,4 +57,4 @@ Optionally, for a better sensor alignment, you can optimize the population param
 
 ## How to Run
 1. Model training: Run `exp/main.ipynb`
-2. Visualization: Run `exp/visualization.ipynb`. It will takes 3-5 minutes.
+2. Visualization: Run `exp/visualization.ipynb`. It will take 3-5 minutes per file to run.
